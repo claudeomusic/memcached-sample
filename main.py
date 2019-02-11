@@ -1,37 +1,9 @@
 import socketserver
+import sys
+from memcache_request import MemcacheRequest
+from database import Database
 
-
-class MemcacheRequest:
-    """
-    A request object class for our Memached server.
-    """
-
-    def __init__(self, request):
-        self.request = request.recv(1024).strip().decode('utf-8')
-
-    @property
-    def command(self):
-        return str(self.request.split(' ')[0])
-
-    def execute(self):
-        options = {
-            'set': self.set_cache,
-            'get': self.get_cache,
-            'delete': self.delete_cache,
-        }
-        options[self.command]()
-
-    def set_cache(self):
-        # todo: implement
-        print('setting cache')
-
-    def get_cache(self):
-        # todo: implement
-        print('getting cache')
-
-    def delete_cache(self):
-        # todo: implement
-        print('deleting cache')
+db = Database()  # global object for sharing db when present
 
 
 class MemcachedRequestHandler(socketserver.BaseRequestHandler):
@@ -46,9 +18,14 @@ class MemcachedRequestHandler(socketserver.BaseRequestHandler):
 
 
 if __name__ == "__main__":
-    HOST, PORT = "localhost", 12111
+    HOST, PORT = "localhost", 11211
 
-    # Create the server, binding to localhost on port 12111
-    with socketserver.TCPServer((HOST, PORT), MemcachedRequestHandler) as server:
+    # Initialize database
+    if sys.argv[2]:
+        db.initialize(sys.argv[2])
+
+    # Create the server, binding to localhost on port 11211
+    with socketserver.TCPServer(
+            (HOST, PORT), MemcachedRequestHandler) as server:
         # Activate the server
         server.serve_forever()
