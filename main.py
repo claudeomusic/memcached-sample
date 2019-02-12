@@ -1,9 +1,17 @@
 import socketserver
 import sys
-from memcache_request import MemcacheRequest
+from memcached_request import MemcachedRequest
 from database import Database
 
 db = Database()  # global object for sharing db when present
+
+
+class Cache:
+    """
+    Used to temporarily cache a request.
+    """
+    waiting = False
+    cached_request = None
 
 
 class MemcachedRequestHandler(socketserver.BaseRequestHandler):
@@ -13,19 +21,40 @@ class MemcachedRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # self.request is the TCP socket connected to the client
-        memcache_request = MemcacheRequest(self.request)
-        memcache_request.execute()
+        if Cache.cached_request:
+            memcached_request = Cache.cached_request
+            memcached_request.update(self.request)
+        else:
+            memcached_request = MemcachedRequest(self.request, db)
 
+        response = memcached_request.execute(followup=Cache.waiting)
+        self.request.sendall(response.encode())
+
+        # caching request if needed
+        if memcached_request.requires_additional_data:
+            Cache.cached_request = memcached_request
+            Cache.waiting = True
+        else:
+            Cache.cached_request = None
+            Cache.waiting = False
+
+
+def start_server(host, port):
+    print('Initializing server...')
+    # initialize db
+    db.initialize(sys.argv[2])
+
+    # Create the server, binding to localhost on port
+    with socketserver.TCPServer(
+            (HOST, PORT), MemcachedRequestHandler) as server:
+        print('Accepting requests on %s:%s' % (host, port))
+        # Activate the server
+        server.serve_forever()
+        
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 11211
-
-    # Initialize database
-    if sys.argv[2]:
-        db.initialize(sys.argv[2])
-
-    # Create the server, binding to localhost on port 11211
-    with socketserver.TCPServer(
-            (HOST, PORT), MemcachedRequestHandler) as server:
-        # Activate the server
-        server.serve_forever()
+    if sys.argv[1] == 'serve' and sys.argv[2]:
+        start_server(HOST, PORT)
+    else:
+        print('usage: python main.py serve database.sqlite')
