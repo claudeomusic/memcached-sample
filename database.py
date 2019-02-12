@@ -17,7 +17,6 @@ class Database:
                 (KEY TEXT PRIMARY KEY, FLAGS UNSIGNED INTEGER, VALUE TEXT)''')
 
     def insert_value(self, key, flags, value):
-        print("%s, %s, %s" % (key, flags, value))
         try:
             cursor = self.connection.cursor()
             cursor.execute("INSERT INTO MEMCACHED VALUES (?, ?, ?)",
@@ -40,8 +39,9 @@ class Database:
     def delete_key(self, key):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("DELETE FROM MEMCACHED WHERE KEY = ?", (key,))
+            impact = cursor.execute(
+                "DELETE FROM MEMCACHED WHERE KEY = ?", (key,)).rowcount
             self.connection.commit()
-            return True
+            return False if impact == 0 else True
         except:
             return False
