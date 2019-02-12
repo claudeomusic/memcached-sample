@@ -39,10 +39,10 @@ class MemcachedRequestHandler(socketserver.BaseRequestHandler):
             Cache.waiting = False
 
 
-def start_server(host, port):
+def start_server(host, port, db_name):
     print('Initializing server...')
     # initialize db
-    db.initialize(sys.argv[2])
+    db.initialize(db_name)
 
     # Create the server, binding to localhost on port
     with socketserver.TCPServer(
@@ -50,11 +50,19 @@ def start_server(host, port):
         print('Accepting requests on %s:%s' % (host, port))
         # Activate the server
         server.serve_forever()
-        
+
+
+def show_values(host, port, db_name):
+    # initialize db
+    db.initialize(db_name)
+    db.show_all()
+
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 11211
     if sys.argv[1] == 'serve' and sys.argv[2]:
-        start_server(HOST, PORT)
+        start_server(HOST, PORT, sys.argv[2])
+    elif sys.argv[1] == 'show' and sys.argv[2]:
+        show_values(HOST, PORT, sys.argv[2])
     else:
         print('usage: python main.py serve database.sqlite')

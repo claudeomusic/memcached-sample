@@ -16,6 +16,15 @@ class Database:
             ''' CREATE TABLE IF NOT EXISTS MEMCACHED
                 (KEY TEXT PRIMARY KEY, FLAGS UNSIGNED INTEGER, VALUE TEXT)''')
 
+    def show_all(self):
+        print('(KEY, FLAGS, VALUE)')
+        try:
+            cursor = self.connection.cursor()
+            for row in cursor.execute('SELECT * FROM MEMCACHED'):
+                print(row)
+        except:
+            print('Database error.')
+
     def insert_value(self, key, flags, value):
         try:
             cursor = self.connection.cursor()
