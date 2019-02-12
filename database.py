@@ -13,14 +13,35 @@ class Database:
         self.connection = sqlite3.connect(db_name)
         cursor = self.connection.cursor()
         cursor.execute(
-            ''' CREATE TABLE IF NOT EXISTS PAIRS (KEY TEXT, VALUE TEXT)''')
-        cursor.execute(
-            ''' CREATE INDEX IF NOT EXISTS KEY_INDEX ON PAIRS(KEY)''')
+            ''' CREATE TABLE IF NOT EXISTS MEMCACHED
+                (KEY TEXT PRIMARY KEY, FLAGS UNSIGNED INTEGER, VALUE TEXT)''')
 
-    def insert_pair(self, key, value):
-        # todo: implement
-        print('inserting pair')
-    
+    def insert_value(self, key, flags, value):
+        print("%s, %s, %s" % (key, flags, value))
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("INSERT INTO MEMCACHED VALUES (?, ?, ?)",
+                           (key, flags, value))
+            self.connection.commit()
+            return True
+        except:
+            return False
+
     def get_value(self, key):
-        # todo: implement
-        print('getting value')
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "SELECT FLAGS, VALUE FROM MEMCACHED WHERE KEY = ?", (key,))
+            first_match = cursor.fetchone()
+            return first_match[0], first_match[1]
+        except:
+            return False
+
+    def delete_key(self, key):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("DELETE FROM MEMCACHED WHERE KEY = ?", (key,))
+            self.connection.commit()
+            return True
+        except:
+            return False
