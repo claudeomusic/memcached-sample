@@ -40,23 +40,31 @@ class MemcachedRequest:
         return '\n'
 
     def _set_cache(self):
-        if self.db.insert_value(
-                self.cache.get('key', ''), 
-                self.cache.get('flags', ''), 
-                self.cache.get('data', ''),
-                ):
+        key = self.cache.get('key', '')
+        flags = self.cache.get('flags', '')
+        data = self.cache.get('data', '')
+        print('Executing set with key=%s, flags=%s, data=%s.' %
+              (key, flags, data))
+        if self.db.insert_value(key, flags, data):
             return 'STORED\n'
         else:
             return 'EXISTS\n'
 
     def _get_cache(self):
         key = self.args[1]
+        print('Executing get with key=%s.' %
+              (key))
         flags, value = self.db.get_value(key)
         if flags and value:
             return 'VALUE %s %s %s\n%s\nEND\n' % (
-              key, flags, len(value), value)
+                key, flags, len(value), value)
+        else:
+            return 'ERROR\n'
 
     def _delete_cache(self):
+        key = self.args[1]
+        print('Executing delete with key=%s.' %
+              (key))
         if self.db.delete_key(self.args[1]):
             return 'DELETED\n'
         else:
